@@ -3,353 +3,303 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>M.M - Mil Modas</title>
-
+<title>Mil Modas - Sistema Profissional</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
 <style>
-body{margin:0;font-family:'Segoe UI';background:#0f0f0f;color:white;display:flex}
+body{margin:0;font-family:Segoe UI;background:#0f0f0f;color:#fff;display:flex}
 .sidebar{width:230px;background:#111;height:100vh;padding:20px;border-right:1px solid #222}
 .logo{text-align:center;margin-bottom:20px}
-.logo h1{margin:0;color:gold;font-size:32px}
-.logo span{font-size:12px;color:#aaa}
-.menu button{width:100%;padding:10px;margin-bottom:10px;background:#1c1c1c;color:white;border:none;border-radius:6px;cursor:pointer}
-.menu button:hover{background:gold;color:black}
-.content{flex:1;padding:20px;overflow-y:auto}
-.card{background:#1a1a1a;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 0 15px rgba(255,215,0,0.1)}
+.logo h1{margin:0;color:gold;font-size:36px;font-weight:bold;}
+.logo span{font-size:14px;color:#aaa}
+.menu button{width:100%;padding:10px;margin-bottom:10px;background:#1c1c1c;color:#fff;border:none;border-radius:6px;cursor:pointer}
+.menu button:hover{background:gold;color:#000}
+.content{flex:1;padding:20px;overflow:auto}
+.card{background:#1a1a1a;padding:20px;border-radius:10px;margin-bottom:20px}
 input,select{padding:8px;margin:5px;border-radius:5px;border:none;background:#2a2a2a;color:white}
-button.action{background:gold;color:black;font-weight:bold;cursor:pointer;padding:8px;border:none;border-radius:6px}
+button.action{background:gold;color:black;font-weight:bold;padding:8px;border:none;border-radius:6px;cursor:pointer}
 table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{border:1px solid #333;padding:8px;text-align:center}
 th{background:#222;color:gold}
-.relogio{text-align:right;color:gold}
-#loginTela{position:fixed;inset:0;background:#0f0f0f;display:flex;align-items:center;justify-content:center;z-index:1000}
+#loginTela{position:fixed;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:1000}
 .loginBox{background:#1a1a1a;padding:40px;border-radius:10px;text-align:center}
-@media print{
-body *{visibility:hidden}
-#comprovante,#comprovante *{visibility:visible}
-#comprovante{position:absolute;left:0;top:0;width:100%}
-}
 </style>
 </head>
-
 <body>
 
+<!-- LOGIN -->
 <div id="loginTela">
-<div class="loginBox">
-<h2>🔐 Login - M.M</h2>
-<input id="usuario" placeholder="Usuário"><br>
-<input type="password" id="senha" placeholder="Senha"><br>
-<button class="action" onclick="login()">Entrar</button>
-</div>
+  <div class="loginBox">
+    <h2>🔥 LOGIN MM</h2>
+    <input id="usuario" placeholder="Usuário"><br>
+    <input type="password" id="senha" placeholder="Senha"><br>
+    <button class="action" onclick="login()">Entrar</button>
+  </div>
 </div>
 
+<!-- SIDEBAR -->
 <div class="sidebar">
-<div class="logo">
-<h1>M.M</h1>
-<span>Mil Modas</span>
-</div>
-<div class="menu">
-<button onclick="mostrar('dashboard')">Dashboard</button>
-<button onclick="mostrar('produtos')" id="btnProdutos">Produtos</button>
-<button onclick="mostrar('usuarios')" id="btnUsuarios">Usuários</button>
-<button onclick="mostrar('caixa')">Caixa</button>
-<button onclick="logout()">Sair</button>
-</div>
+  <div class="logo">
+    <h1>M.M</h1>
+    <span>Mil Modas</span>
+  </div>
+  <div class="menu">
+    <button onclick="mostrar('dashboard')">Dashboard</button>
+    <button onclick="mostrar('produtos')">Produtos</button>
+    <button onclick="mostrar('clientes')">Clientes</button>
+    <button onclick="mostrar('fiado')">Fiado</button>
+    <button onclick="mostrar('caixa')">PDV</button>
+    <button onclick="relatorioDiario()">Relatório Diário</button>
+    <button onclick="logout()">Sair</button>
+  </div>
 </div>
 
+<!-- CONTEÚDO -->
 <div class="content">
 
-<div class="relogio" id="relogio"></div>
-
 <div id="dashboard" class="card">
-<h2>📊 Painel Administrativo</h2>
-<p>Total Produtos: <b id="totalProdutos">0</b></p>
-<p>Total Vendido: R$ <b id="totalVendas">0.00</b></p>
+  <h2>Dashboard</h2>
+  <p>Total Produtos: <b id="totalProdutos">0</b></p>
+  <p>Total Vendido: R$ <b id="totalVendas">0.00</b></p>
+  <p>Total Fiado: R$ <b id="totalFiado">0.00</b></p>
 </div>
 
 <div id="produtos" class="card" style="display:none">
-<h2>📦 Cadastro de Produtos</h2>
-<input id="nome" placeholder="Nome">
-<input id="preco" type="number" placeholder="Preço">
-<input id="estoque" type="number" placeholder="Estoque">
-<button class="action" onclick="addProduto()">Salvar</button>
-
-<table>
-<thead>
-<tr>
-<th>ID</th>
-<th>Nome</th>
-<th>Preço</th>
-<th>Estoque</th>
-<th>Ações</th>
-</tr>
-</thead>
-<tbody id="listaProdutos"></tbody>
-</table>
+  <h2>Cadastro Produto</h2>
+  <input id="nome" placeholder="Nome">
+  <select id="tamanho"><option>P</option><option>M</option><option>G</option><option>GG</option></select>
+  <input id="codigo" placeholder="Código Barras">
+  <input id="preco" type="number" placeholder="Preço">
+  <input id="estoque" type="number" placeholder="Estoque">
+  <button class="action" onclick="addProduto()">Salvar</button>
+  <table>
+    <thead><tr><th>ID</th><th>Produto</th><th>Preço</th><th>Estoque</th><th></th></tr></thead>
+    <tbody id="listaProdutos"></tbody>
+  </table>
 </div>
 
-<div id="usuarios" class="card" style="display:none">
-<h2>👥 Usuários</h2>
-<input id="novoUsuario" placeholder="Usuário">
-<input id="novaSenha" placeholder="Senha">
-<select id="tipoUsuario">
-<option value="vendedor">Vendedor</option>
-<option value="admin">Admin</option>
-</select>
-<button class="action" onclick="criarUsuario()">Criar</button>
+<div id="clientes" class="card" style="display:none">
+  <h2>Clientes</h2>
+  <input id="nomeCliente" placeholder="Nome">
+  <input id="telefoneCliente" placeholder="Telefone">
+  <button class="action" onclick="adicionarCliente()">Cadastrar</button>
+  <table>
+    <thead><tr><th>Nome</th><th>Telefone</th><th>Dívida</th><th></th></tr></thead>
+    <tbody id="listaClientes"></tbody>
+  </table>
+</div>
 
-<h3>Alterar Senha</h3>
-<input id="usuarioAlterar" placeholder="Usuário">
-<input id="senhaAlterar" placeholder="Nova senha">
-<button class="action" onclick="alterarSenha()">Alterar</button>
-
-<table>
-<thead><tr><th>Usuário</th><th>Tipo</th></tr></thead>
-<tbody id="listaUsuarios"></tbody>
-</table>
+<div id="fiado" class="card" style="display:none">
+  <h2>Controle de Fiado</h2>
+  <table>
+    <thead><tr><th>Cliente</th><th>Valor</th><th>Data</th><th></th></tr></thead>
+    <tbody id="listaFiado"></tbody>
+  </table>
 </div>
 
 <div id="caixa" class="card" style="display:none">
-<h2>🛒 PDV</h2>
-<button class="action" onclick="abrirCaixa()">🟢 Abrir Caixa</button>
-<button class="action" onclick="fecharCaixa()">🔴 Fechar Caixa</button>
-<input id="pesquisa" placeholder="🔎 Pesquisar produto" onkeyup="pesquisar()">
-
-<table>
-<thead><tr><th>ID</th><th>Produto</th><th>Preço</th><th></th></tr></thead>
-<tbody id="resultado"></tbody>
-</table>
-
-<h3>🧾 Carrinho</h3>
-<table>
-<thead><tr><th>Produto</th><th>Qtd</th><th>Total</th><th></th></tr></thead>
-<tbody id="carrinhoLista"></tbody>
-</table>
-
-<p>Total: R$ <b id="totalVenda">0.00</b></p>
-
-<select id="formaPagamento">
-<option value="">Pagamento</option>
-<option>Pix</option>
-<option>Dinheiro</option>
-<option>Cartão</option>
-</select>
-
-<input id="valorRecebido" type="number" placeholder="Valor Recebido">
-<p>Troco: R$ <b id="troco">0.00</b></p>
-
-<button class="action" onclick="finalizarVenda()">Finalizar Venda</button>
-<button class="action" onclick="imprimirComprovante()">🖨 Imprimir</button>
-</div>
-
-<div id="comprovante" style="display:none;background:white;color:black;padding:20px"></div>
-
+  <h2>PDV</h2>
+  <input id="pesquisa" placeholder="Pesquisar ou código" onkeyup="pesquisar()">
+  <select id="formaPagamento">
+    <option value="">Pagamento</option>
+    <option>Pix</option>
+    <option>Dinheiro</option>
+    <option>Cartão</option>
+    <option>Fiado</option>
+  </select>
+  <input id="valorRecebido" type="number" placeholder="Valor Recebido">
+  <p>Troco: R$ <b id="troco">0.00</b></p>
+  <table>
+    <thead><tr><th>Produto</th><th>Qtd</th><th>Total</th><th></th></tr></thead>
+    <tbody id="carrinhoLista"></tbody>
+  </table>
+  <p>Total: R$ <b id="totalVenda">0.00</b></p>
+  <button class="action" onclick="finalizarVenda()">Finalizar Venda</button>
 </div>
 
 <script>
-setInterval(()=>{relogio.innerText="🕒 "+new Date().toLocaleTimeString("pt-BR")},1000);
+// CONFIGURAÇÃO
+let LIMITE_FIADO = 300;
 
+// BANCO LOCAL
 let db=JSON.parse(localStorage.getItem("mm_loja"))||{
-usuarios:[{usuario:"admin",senha:"1234",tipo:"admin"},{usuario:"vendedor",senha:"1234",tipo:"vendedor"}],
-produtos:[],
-ponto:[],
-caixa:{aberto:false,total:0}
+  usuarios:[{usuario:"admin",senha:"1234"}],
+  produtos:[],
+  vendas:[],
+  clientes:[],
+  fiado:[],
+  pagamentosFiado:[],
+  caixa:{total:0}
 };
 
-let usuarioLogado=null;
 let carrinho=[];
-let ultimaVenda=null;
-let editandoId=null;
+let clienteSelecionado=null;
 
-function salvar(){
-localStorage.setItem("mm_loja",JSON.stringify(db));
-render();
-}
-
+// LOGIN
 function login(){
-let user=db.usuarios.find(u=>u.usuario===usuario.value&&u.senha===senha.value);
-if(!user)return alert("Login inválido");
-usuarioLogado=user;
-loginTela.style.display="none";
-if(user.tipo==="vendedor"){
-btnProdutos.style.display="none";
-btnUsuarios.style.display="none";
-dashboard.style.display="none";
-}
-render();
+  let user=db.usuarios.find(u=>u.usuario===usuario.value && u.senha===senha.value);
+  if(!user) return alert("Login inválido");
+  loginTela.style.display="none";
+  render();
 }
 
-function logout(){location.reload()}
+// LOGOUT
+function logout(){location.reload();}
 
+// MOSTRAR PAINEL
 function mostrar(id){
-document.querySelectorAll(".card").forEach(c=>c.style.display="none");
-document.getElementById(id).style.display="block";
+  document.querySelectorAll(".card").forEach(c=>c.style.display="none");
+  document.getElementById(id).style.display="block";
 }
 
+// SALVAR
+function salvar(){localStorage.setItem("mm_loja",JSON.stringify(db));render();}
+
+// RENDERIZAÇÃO
 function render(){
-totalProdutos.innerText=db.produtos.length;
-if(usuarioLogado && usuarioLogado.tipo==="admin"){
-totalVendas.innerText=db.caixa.total.toFixed(2);
-}else{
-dashboard.style.display="none";
+  totalProdutos.innerText=db.produtos.length;
+  totalVendas.innerText=db.caixa.total.toFixed(2);
+  if(document.getElementById("totalFiado"))
+    document.getElementById("totalFiado").innerText=db.fiado.reduce((s,f)=>s+f.valor,0).toFixed(2);
+
+  // Produtos
+  listaProdutos.innerHTML="";
+  db.produtos.forEach(p=>{
+    listaProdutos.innerHTML+=`<tr>
+      <td>${p.id}</td><td>${p.nome} ${p.tamanho}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.estoque}</td>
+      <td><button onclick="removerProduto(${p.id})">🗑</button></td></tr>`;
+  });
+
+  // Clientes
+  if(document.getElementById("listaClientes")){
+    listaClientes.innerHTML="";
+    db.clientes.forEach(c=>{
+      let divida=calcularDividaCliente(c.nome);
+      listaClientes.innerHTML+=`<tr>
+        <td>${c.nome}</td><td>${c.telefone}</td><td>R$ ${divida.toFixed(2)}</td>
+        <td><button onclick="selecionarCliente('${c.nome}')">Selecionar</button>
+        <button onclick="cobrarWhats('${c.nome}')">📲 Cobrar</button></td></tr>`;
+    });
+  }
+
+  // Fiado
+  if(document.getElementById("listaFiado")){
+    listaFiado.innerHTML="";
+    db.fiado.forEach((f,i)=>{
+      listaFiado.innerHTML+=`<tr>
+        <td>${f.cliente}</td><td>R$ ${f.valor.toFixed(2)}</td><td>${f.data}</td>
+        <td><button onclick="pagarFiado(${i})">💰 Pagar</button></td></tr>`;
+    });
+  }
 }
 
-listaProdutos.innerHTML="";
-db.produtos.forEach(p=>{
-listaProdutos.innerHTML+=`
-<tr>
-<td>${p.id}</td>
-<td>${p.nome}</td>
-<td>R$ ${p.preco.toFixed(2)}</td>
-<td>${p.estoque}</td>
-<td>
-<button onclick="editarProduto(${p.id})">✏️</button>
-<button onclick="removerProduto(${p.id})">🗑️</button>
-</td>
-</tr>`;
-});
-
-listaUsuarios.innerHTML="";
-db.usuarios.forEach(u=>{
-listaUsuarios.innerHTML+=`<tr><td>${u.usuario}</td><td>${u.tipo}</td></tr>`;
-});
+// CLIENTES
+function adicionarCliente(){
+  if(!nomeCliente.value) return alert("Digite nome");
+  db.clientes.push({nome:nomeCliente.value,telefone:telefoneCliente.value});
+  nomeCliente.value=""; telefoneCliente.value=""; salvar();
 }
+function selecionarCliente(nome){clienteSelecionado=nome; alert("Cliente selecionado: "+nome);}
+function calcularDividaCliente(nome){return db.fiado.filter(f=>f.cliente===nome).reduce((s,f)=>s+f.valor,0);}
 
+// PRODUTOS
 function addProduto(){
-if(!nome.value || !preco.value || !estoque.value)
-return alert("Preencha todos os campos");
-
-if(editandoId){
-let p=db.produtos.find(prod=>prod.id===editandoId);
-p.nome=nome.value;
-p.preco=Number(preco.value);
-p.estoque=Number(estoque.value);
-editandoId=null;
-}else{
-let existente=db.produtos.find(p=>p.nome.toLowerCase()===nome.value.toLowerCase());
-if(existente){
-existente.estoque+=Number(estoque.value);
-existente.preco=Number(preco.value);
-}else{
-let novoId=db.produtos.length>0?Math.max(...db.produtos.map(p=>p.id))+1:1;
-db.produtos.push({
-id:novoId,
-nome:nome.value,
-preco:Number(preco.value),
-estoque:Number(estoque.value)
-});
+  if(!nome.value||!preco.value||!estoque.value) return alert("Preencha tudo");
+  let novoId=db.produtos.length?Math.max(...db.produtos.map(p=>p.id))+1:1;
+  db.produtos.push({id:novoId,nome:nome.value,tamanho:tamanho.value,codigo:codigo.value,preco:Number(preco.value),estoque:Number(estoque.value)});
+  nome.value=""; preco.value=""; estoque.value=""; codigo.value=""; salvar();
 }
-}
+function removerProduto(id){db.produtos=db.produtos.filter(p=>p.id!==id); salvar();}
 
-nome.value="";
-preco.value="";
-estoque.value="";
-salvar();
-}
-
-function editarProduto(id){
-let p=db.produtos.find(prod=>prod.id===id);
-nome.value=p.nome;
-preco.value=p.preco;
-estoque.value=p.estoque;
-editandoId=id;
-}
-
-function removerProduto(id){
-if(!confirm("Deseja remover este produto?"))return;
-db.produtos=db.produtos.filter(p=>p.id!==id);
-salvar();
-}
-
-function criarUsuario(){
-if(!novoUsuario.value||!novaSenha.value)return alert("Preencha todos os campos");
-db.usuarios.push({usuario:novoUsuario.value,senha:novaSenha.value,tipo:tipoUsuario.value});
-novoUsuario.value="";
-novaSenha.value="";
-salvar();
-}
-
-function alterarSenha(){
-if(!usuarioAlterar.value||!senhaAlterar.value)return alert("Preencha todos os campos");
-let user=db.usuarios.find(u=>u.usuario===usuarioAlterar.value);
-if(!user)return alert("Usuário não encontrado");
-user.senha=senhaAlterar.value;
-usuarioAlterar.value="";
-senhaAlterar.value="";
-salvar();
-}
-
-function abrirCaixa(){
-db.caixa.aberto=true;
-alert("Caixa aberto");
-salvar();
-}
-
-function fecharCaixa(){
-db.caixa.aberto=false;
-alert("Caixa fechado");
-salvar();
-}
-
+// PDV
 function pesquisar(){
-let termo=pesquisa.value.toLowerCase();
-resultado.innerHTML="";
-db.produtos.filter(p=>p.nome.toLowerCase().includes(termo)).forEach(p=>{
-resultado.innerHTML+=`<tr><td>${p.id}</td><td>${p.nome}</td><td>R$ ${p.preco.toFixed(2)}</td><td><button onclick="adicionarCarrinho(${p.id})">+</button></td></tr>`;
-});
+  resultado.innerHTML="";
+  let termo=pesquisa.value.toLowerCase();
+  db.produtos.filter(p=>(p.nome.toLowerCase().includes(termo)||p.codigo==termo)&&p.estoque>0)
+    .forEach(p=>{resultado.innerHTML+=`<tr>
+      <td>${p.nome} ${p.tamanho}</td><td>R$ ${p.preco.toFixed(2)}</td><td><button onclick="adicionarCarrinho(${p.id})">+</button></td></tr>`});
 }
 
 function adicionarCarrinho(id){
-let prod=db.produtos.find(p=>p.id===id);
-let item=carrinho.find(c=>c.id===id);
-if(item){
-item.quantidade++;
-}else{
-carrinho.push({id:prod.id,nome:prod.nome,preco:prod.preco,quantidade:1});
-}
-atualizarCarrinho();
+  let prod=db.produtos.find(p=>p.id===id);
+  if(!prod||prod.estoque<=0) return alert("Produto esgotado");
+  let item=carrinho.find(c=>c.id===id);
+  if(item){if(item.quantidade>=prod.estoque) return alert("Estoque insuficiente"); item.quantidade++;}
+  else{carrinho.push({id:prod.id,nome:prod.nome+" "+prod.tamanho,preco:prod.preco,quantidade:1});}
+  atualizarCarrinho();
 }
 
 function atualizarCarrinho(){
-carrinhoLista.innerHTML="";
-let total=0;
-carrinho.forEach((item,idx)=>{
-let subtotal=item.preco*item.quantidade;
-total+=subtotal;
-carrinhoLista.innerHTML+=`<tr><td>${item.nome}</td><td><input type="number" value="${item.quantidade}" onchange="carrinho[${idx}].quantidade=parseInt(this.value);atualizarCarrinho()"></td><td>R$ ${subtotal.toFixed(2)}</td><td><button onclick="carrinho.splice(${idx},1);atualizarCarrinho()">❌</button></td></tr>`;
-});
-totalVenda.innerText=total.toFixed(2);
+  carrinhoLista.innerHTML="";
+  let total=0;
+  carrinho.forEach((item,i)=>{
+    let subtotal=item.preco*item.quantidade; total+=subtotal;
+    carrinhoLista.innerHTML+=`<tr>
+      <td>${item.nome}</td><td>${item.quantidade}</td><td>R$ ${subtotal.toFixed(2)}</td>
+      <td><button onclick="carrinho.splice(${i},1);atualizarCarrinho()">❌</button></td></tr>`;
+  });
+  totalVenda.innerText=total.toFixed(2);
 }
 
 function finalizarVenda(){
-if(carrinho.length===0)return alert("Carrinho vazio");
-if(!formaPagamento.value)return alert("Selecione forma de pagamento");
-let total=parseFloat(totalVenda.innerText);
-let recebido=Number(valorRecebido.value);
-if(recebido<total)return alert("Valor insuficiente");
-troco.innerText=(recebido-total).toFixed(2);
-db.caixa.total+=total;
-ultimaVenda={itens:carrinho,total,pagamento:formaPagamento.value,data:new Date().toLocaleString("pt-BR")};
-carrinho=[];
-atualizarCarrinho();
-formaPagamento.value="";
-valorRecebido.value="";
-salvar();
-alert("Venda finalizada");
+  if(carrinho.length===0) return alert("Carrinho vazio");
+  if(!formaPagamento.value) return alert("Selecione pagamento");
+  let total=parseFloat(totalVenda.innerText);
+
+  if(formaPagamento.value==="Fiado"){
+    if(!clienteSelecionado) return alert("Selecione cliente");
+    let dividaAtual=calcularDividaCliente(clienteSelecionado);
+    if(dividaAtual+total>LIMITE_FIADO) return alert("Cliente ultrapassou limite de R$ "+LIMITE_FIADO);
+  } else {
+    let recebido=Number(valorRecebido.value);
+    if(recebido<total) return alert("Valor insuficiente");
+    troco.innerText=(recebido-total).toFixed(2);
+    db.caixa.total+=total;
+  }
+
+  for(let item of carrinho){
+    let prod=db.produtos.find(p=>item.nome.includes(p.nome));
+    if(!prod||prod.estoque<item.quantidade) return alert("Estoque insuficiente");
+    prod.estoque-=item.quantidade;
+  }
+
+  let venda={itens:[...carrinho],total,pagamento:formaPagamento.value,data:new Date().toLocaleString("pt-BR"),cliente:clienteSelecionado};
+  db.vendas.push(venda);
+
+  if(formaPagamento.value==="Fiado"){
+    db.fiado.push({cliente:clienteSelecionado,valor:total,data:new Date().toLocaleDateString("pt-BR")});
+  }
+
+  carrinho=[]; clienteSelecionado=null; formaPagamento.value=""; valorRecebido.value=""; atualizarCarrinho(); salvar();
+  alert("Venda finalizada");
 }
 
-function imprimirComprovante(){
-if(!ultimaVenda)return alert("Nenhuma venda registrada");
-comprovante.innerHTML=`
-<h2>M.M - Mil Modas</h2>
-<p>Data: ${ultimaVenda.data}</p>
-<hr>
-${ultimaVenda.itens.map(i=>`<p>${i.nome} x${i.quantidade} = R$ ${(i.preco*i.quantidade).toFixed(2)}</p>`).join("")}
-<hr>
-<p><b>Total: R$ ${ultimaVenda.total.toFixed(2)}</b></p>
-<p>Pagamento: ${ultimaVenda.pagamento}</p>
-`;
-comprovante.style.display="block";
-window.print();
+// FIADO
+function pagarFiado(i){
+  let f=db.fiado[i]; db.caixa.total+=f.valor;
+  db.pagamentosFiado.push({cliente:f.cliente,valor:f.valor,data:new Date().toLocaleString("pt-BR")});
+  alert(`Recibo de pagamento\nCliente: ${f.cliente}\nValor: R$ ${f.valor.toFixed(2)}`);
+  db.fiado.splice(i,1); salvar();
+}
+
+// COBRANÇA WHATSAPP
+function cobrarWhats(nome){
+  let cliente=db.clientes.find(c=>c.nome===nome);
+  if(!cliente||!cliente.telefone) return alert("Telefone não cadastrado");
+  let divida=calcularDividaCliente(nome);
+  if(divida<=0) return alert("Cliente não possui dívida");
+  let mensagem=`Olá ${nome}, você possui um débito de R$ ${divida.toFixed(2)} na Mil Modas. Por favor, regularizar.`;
+  let telefone=cliente.telefone.replace(/\D/g,"");
+  let url=`https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
+  window.open(url,"_blank");
+}
+
+// RELATÓRIO DIÁRIO
+function relatorioDiario(){
+  let hoje=new Date().toLocaleDateString("pt-BR");
+  let vendasHoje=db.vendas.filter(v=>v.data.startsWith(hoje));
+  let total=vendasHoje.reduce((s,v)=>s+v.total,0);
+  alert(`RELATÓRIO DE HOJE\nData: ${hoje}\nVendas: ${vendasHoje.length}\nTotal: R$ ${total.toFixed(2)}`);
 }
 
 render();
