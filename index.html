@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M.M - Mil Modas</title>
+
+<style>
+body{margin:0;font-family:'Segoe UI';background:#0f0f0f;color:white;display:flex}
+.sidebar{width:230px;background:#111;height:100vh;padding:20px;border-right:1px solid #222}
+.logo{text-align:center;margin-bottom:20px}
+.logo h1{margin:0;color:gold;font-size:32px}
+.logo span{font-size:12px;color:#aaa}
+.menu button{width:100%;padding:10px;margin-bottom:10px;background:#1c1c1c;color:white;border:none;border-radius:6px;cursor:pointer}
+.menu button:hover{background:gold;color:black}
+.content{flex:1;padding:20px;overflow-y:auto}
+.card{background:#1a1a1a;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 0 15px rgba(255,215,0,0.1)}
+input,select{padding:8px;margin:5px;border-radius:5px;border:none;background:#2a2a2a;color:white}
+button.action{background:gold;color:black;font-weight:bold;cursor:pointer;padding:8px;border:none;border-radius:6px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #333;padding:8px;text-align:center}
+th{background:#222;color:gold}
+.relogio{text-align:right;color:gold}
+#loginTela{position:fixed;inset:0;background:#0f0f0f;display:flex;align-items:center;justify-content:center;z-index:1000}
+.loginBox{background:#1a1a1a;padding:40px;border-radius:10px;text-align:center}
+@media print{
+body *{visibility:hidden}
+#comprovante,#comprovante *{visibility:visible}
+#comprovante{position:absolute;left:0;top:0;width:100%}
+}
+</style>
+</head>
+
+<body>
+
+<div id="loginTela">
+<div class="loginBox">
+<h2>🔐 Login - M.M</h2>
+<input id="usuario" placeholder="Usuário"><br>
+<input type="password" id="senha" placeholder="Senha"><br>
+<button class="action" onclick="login()">Entrar</button>
+</div>
+</div>
+
+<div class="sidebar">
+<div class="logo">
+<h1>M.M</h1>
+<span>Mil Modas</span>
+</div>
+<div class="menu">
+<button onclick="mostrar('dashboard')">Dashboard</button>
+<button onclick="mostrar('produtos')" id="btnProdutos">Produtos</button>
+<button onclick="mostrar('usuarios')" id="btnUsuarios">Usuários</button>
+<button onclick="mostrar('caixa')">Caixa</button>
+<button onclick="logout()">Sair</button>
+</div>
+</div>
+
+<div class="content">
+
+<div class="relogio" id="relogio"></div>
+
+<div id="dashboard" class="card">
+<h2>📊 Painel Administrativo</h2>
+<p>Total Produtos: <b id="totalProdutos">0</b></p>
+<p>Total Vendido: R$ <b id="totalVendas">0.00</b></p>
+</div>
+
+<div id="produtos" class="card" style="display:none">
+<h2>📦 Cadastro de Produtos</h2>
+<input id="nome" placeholder="Nome">
+<input id="preco" type="number" placeholder="Preço">
+<input id="estoque" type="number" placeholder="Estoque">
+<button class="action" onclick="addProduto()">Salvar</button>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Nome</th>
+<th>Preço</th>
+<th>Estoque</th>
+<th>Ações</th>
+</tr>
+</thead>
+<tbody id="listaProdutos"></tbody>
+</table>
+</div>
+
+<div id="usuarios" class="card" style="display:none">
+<h2>👥 Usuários</h2>
+<input id="novoUsuario" placeholder="Usuário">
+<input id="novaSenha" placeholder="Senha">
+<select id="tipoUsuario">
+<option value="vendedor">Vendedor</option>
+<option value="admin">Admin</option>
+</select>
+<button class="action" onclick="criarUsuario()">Criar</button>
+
+<h3>Alterar Senha</h3>
+<input id="usuarioAlterar" placeholder="Usuário">
+<input id="senhaAlterar" placeholder="Nova senha">
+<button class="action" onclick="alterarSenha()">Alterar</button>
+
+<table>
+<thead><tr><th>Usuário</th><th>Tipo</th></tr></thead>
+<tbody id="listaUsuarios"></tbody>
+</table>
+</div>
+
+<div id="caixa" class="card" style="display:none">
+<h2>🛒 PDV</h2>
+<button class="action" onclick="abrirCaixa()">🟢 Abrir Caixa</button>
+<button class="action" onclick="fecharCaixa()">🔴 Fechar Caixa</button>
+<input id="pesquisa" placeholder="🔎 Pesquisar produto" onkeyup="pesquisar()">
+
+<table>
+<thead><tr><th>ID</th><th>Produto</th><th>Preço</th><th></th></tr></thead>
+<tbody id="resultado"></tbody>
+</table>
+
+<h3>🧾 Carrinho</h3>
+<table>
+<thead><tr><th>Produto</th><th>Qtd</th><th>Total</th><th></th></tr></thead>
+<tbody id="carrinhoLista"></tbody>
+</table>
+
+<p>Total: R$ <b id="totalVenda">0.00</b></p>
+
+<select id="formaPagamento">
+<option value="">Pagamento</option>
+<option>Pix</option>
+<option>Dinheiro</option>
+<option>Cartão</option>
+</select>
+
+<input id="valorRecebido" type="number" placeholder="Valor Recebido">
+<p>Troco: R$ <b id="troco">0.00</b></p>
+
+<button class="action" onclick="finalizarVenda()">Finalizar Venda</button>
+<button class="action" onclick="imprimirComprovante()">🖨 Imprimir</button>
+</div>
+
+<div id="comprovante" style="display:none;background:white;color:black;padding:20px"></div>
+
+</div>
+
+<script>
+setInterval(()=>{relogio.innerText="🕒 "+new Date().toLocaleTimeString("pt-BR")},1000);
+
+let db=JSON.parse(localStorage.getItem("mm_loja"))||{
+usuarios:[{usuario:"admin",senha:"1234",tipo:"admin"},{usuario:"vendedor",senha:"1234",tipo:"vendedor"}],
+produtos:[],
+ponto:[],
+caixa:{aberto:false,total:0}
+};
+
+let usuarioLogado=null;
+let carrinho=[];
+let ultimaVenda=null;
+let editandoId=null;
+
+function salvar(){
+localStorage.setItem("mm_loja",JSON.stringify(db));
+render();
+}
+
+function login(){
+let user=db.usuarios.find(u=>u.usuario===usuario.value&&u.senha===senha.value);
+if(!user)return alert("Login inválido");
+usuarioLogado=user;
+loginTela.style.display="none";
+if(user.tipo==="vendedor"){
+btnProdutos.style.display="none";
+btnUsuarios.style.display="none";
+dashboard.style.display="none";
+}
+render();
+}
+
+function logout(){location.reload()}
+
+function mostrar(id){
+document.querySelectorAll(".card").forEach(c=>c.style.display="none");
+document.getElementById(id).style.display="block";
+}
+
+function render(){
+totalProdutos.innerText=db.produtos.length;
+if(usuarioLogado && usuarioLogado.tipo==="admin"){
+totalVendas.innerText=db.caixa.total.toFixed(2);
+}else{
+dashboard.style.display="none";
+}
+
+listaProdutos.innerHTML="";
+db.produtos.forEach(p=>{
+listaProdutos.innerHTML+=`
+<tr>
+<td>${p.id}</td>
+<td>${p.nome}</td>
+<td>R$ ${p.preco.toFixed(2)}</td>
+<td>${p.estoque}</td>
+<td>
+<button onclick="editarProduto(${p.id})">✏️</button>
+<button onclick="removerProduto(${p.id})">🗑️</button>
+</td>
+</tr>`;
+});
+
+listaUsuarios.innerHTML="";
+db.usuarios.forEach(u=>{
+listaUsuarios.innerHTML+=`<tr><td>${u.usuario}</td><td>${u.tipo}</td></tr>`;
+});
+}
+
+function addProduto(){
+if(!nome.value || !preco.value || !estoque.value)
+return alert("Preencha todos os campos");
+
+if(editandoId){
+let p=db.produtos.find(prod=>prod.id===editandoId);
+p.nome=nome.value;
+p.preco=Number(preco.value);
+p.estoque=Number(estoque.value);
+editandoId=null;
+}else{
+let existente=db.produtos.find(p=>p.nome.toLowerCase()===nome.value.toLowerCase());
+if(existente){
+existente.estoque+=Number(estoque.value);
+existente.preco=Number(preco.value);
+}else{
+let novoId=db.produtos.length>0?Math.max(...db.produtos.map(p=>p.id))+1:1;
+db.produtos.push({
+id:novoId,
+nome:nome.value,
+preco:Number(preco.value),
+estoque:Number(estoque.value)
+});
+}
+}
+
+nome.value="";
+preco.value="";
+estoque.value="";
+salvar();
+}
+
+function editarProduto(id){
+let p=db.produtos.find(prod=>prod.id===id);
+nome.value=p.nome;
+preco.value=p.preco;
+estoque.value=p.estoque;
+editandoId=id;
+}
+
+function removerProduto(id){
+if(!confirm("Deseja remover este produto?"))return;
+db.produtos=db.produtos.filter(p=>p.id!==id);
+salvar();
+}
+
+function criarUsuario(){
+if(!novoUsuario.value||!novaSenha.value)return alert("Preencha todos os campos");
+db.usuarios.push({usuario:novoUsuario.value,senha:novaSenha.value,tipo:tipoUsuario.value});
+novoUsuario.value="";
+novaSenha.value="";
+salvar();
+}
+
+function alterarSenha(){
+if(!usuarioAlterar.value||!senhaAlterar.value)return alert("Preencha todos os campos");
+let user=db.usuarios.find(u=>u.usuario===usuarioAlterar.value);
+if(!user)return alert("Usuário não encontrado");
+user.senha=senhaAlterar.value;
+usuarioAlterar.value="";
+senhaAlterar.value="";
+salvar();
+}
+
+function abrirCaixa(){
+db.caixa.aberto=true;
+alert("Caixa aberto");
+salvar();
+}
+
+function fecharCaixa(){
+db.caixa.aberto=false;
+alert("Caixa fechado");
+salvar();
+}
+
+function pesquisar(){
+let termo=pesquisa.value.toLowerCase();
+resultado.innerHTML="";
+db.produtos.filter(p=>p.nome.toLowerCase().includes(termo)).forEach(p=>{
+resultado.innerHTML+=`<tr><td>${p.id}</td><td>${p.nome}</td><td>R$ ${p.preco.toFixed(2)}</td><td><button onclick="adicionarCarrinho(${p.id})">+</button></td></tr>`;
+});
+}
+
+function adicionarCarrinho(id){
+let prod=db.produtos.find(p=>p.id===id);
+let item=carrinho.find(c=>c.id===id);
+if(item){
+item.quantidade++;
+}else{
+carrinho.push({id:prod.id,nome:prod.nome,preco:prod.preco,quantidade:1});
+}
+atualizarCarrinho();
+}
+
+function atualizarCarrinho(){
+carrinhoLista.innerHTML="";
+let total=0;
+carrinho.forEach((item,idx)=>{
+let subtotal=item.preco*item.quantidade;
+total+=subtotal;
+carrinhoLista.innerHTML+=`<tr><td>${item.nome}</td><td><input type="number" value="${item.quantidade}" onchange="carrinho[${idx}].quantidade=parseInt(this.value);atualizarCarrinho()"></td><td>R$ ${subtotal.toFixed(2)}</td><td><button onclick="carrinho.splice(${idx},1);atualizarCarrinho()">❌</button></td></tr>`;
+});
+totalVenda.innerText=total.toFixed(2);
+}
+
+function finalizarVenda(){
+if(carrinho.length===0)return alert("Carrinho vazio");
+if(!formaPagamento.value)return alert("Selecione forma de pagamento");
+let total=parseFloat(totalVenda.innerText);
+let recebido=Number(valorRecebido.value);
+if(recebido<total)return alert("Valor insuficiente");
+troco.innerText=(recebido-total).toFixed(2);
+db.caixa.total+=total;
+ultimaVenda={itens:carrinho,total,pagamento:formaPagamento.value,data:new Date().toLocaleString("pt-BR")};
+carrinho=[];
+atualizarCarrinho();
+formaPagamento.value="";
+valorRecebido.value="";
+salvar();
+alert("Venda finalizada");
+}
+
+function imprimirComprovante(){
+if(!ultimaVenda)return alert("Nenhuma venda registrada");
+comprovante.innerHTML=`
+<h2>M.M - Mil Modas</h2>
+<p>Data: ${ultimaVenda.data}</p>
+<hr>
+${ultimaVenda.itens.map(i=>`<p>${i.nome} x${i.quantidade} = R$ ${(i.preco*i.quantidade).toFixed(2)}</p>`).join("")}
+<hr>
+<p><b>Total: R$ ${ultimaVenda.total.toFixed(2)}</b></p>
+<p>Pagamento: ${ultimaVenda.pagamento}</p>
+`;
+comprovante.style.display="block";
+window.print();
+}
+
+render();
+</script>
+
+</body>
+</html>
