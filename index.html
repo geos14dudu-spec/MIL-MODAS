@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mil Modas - Sistema Profissional</title>
+
 <style>
-body{margin:0;font-family:Segoe UI;background:#0f0f0f;color:#fff;display:flex;flex-direction:row}
+body{margin:0;font-family:Segoe UI;background:#0f0f0f;color:#fff;display:flex}
 .sidebar{width:230px;background:#111;height:100vh;padding:20px;border-right:1px solid #222}
 .logo{text-align:center;margin-bottom:20px}
-.logo h1{margin:0;color:gold;font-size:36px;font-weight:bold;}
+.logo h1{margin:0;color:gold;font-size:36px}
 .logo span{font-size:14px;color:#aaa}
 .menu button{width:100%;padding:10px;margin-bottom:10px;background:#1c1c1c;color:#fff;border:none;border-radius:6px;cursor:pointer}
 .menu button:hover{background:gold;color:#000}
@@ -123,6 +124,13 @@ th{background:#222;color:gold}
   </select>
   <input id="valorRecebido" type="number" placeholder="Valor Recebido">
   <p>Troco: R$ <b id="troco">0.00</b></p>
+
+  <h3>Resultados</h3>
+  <table>
+    <tbody id="resultadoPesquisa"></tbody>
+  </table>
+
+  <h3>Carrinho</h3>
   <table>
     <thead><tr><th>Produto</th><th>Qtd</th><th>Total</th><th></th></tr></thead>
     <tbody id="carrinhoLista"></tbody>
@@ -131,124 +139,172 @@ th{background:#222;color:gold}
   <button class="action" onclick="finalizarVenda()">Finalizar Venda</button>
 </div>
 
+</div>
+
 <script>
-// CONFIG
 let LIMITE_FIADO = 300;
+
 let db = JSON.parse(localStorage.getItem("mm_loja")) || {
   usuarios:[{usuario:"admin",senha:"1234",dashboard:true,relatorio:true}],
-  produtos:[], clientes:[], fiado:[], vendas:[], caixa:{aberto:false,total:0}
+  produtos:[], clientes:[], fiado:[], vendas:[],
+  caixa:{aberto:false,total:0}
 };
 
 let usuarioLogado=null;
 let carrinho=[];
 let clienteSelecionado=null;
 
-// LOGIN
+function salvar(){
+  localStorage.setItem("mm_loja",JSON.stringify(db));
+  render();
+}
+
 function login(){
   let user=db.usuarios.find(u=>u.usuario===usuario.value && u.senha===senha.value);
   if(!user) return alert("Login inválido");
   usuarioLogado=user;
   loginTela.style.display="none";
-  if(!user.dashboard) document.getElementById("btnDashboard").style.display="none";
-  if(!user.relatorio) document.querySelector(".menu button:nth-child(6)").style.display="none";
+  if(!user.dashboard) btnDashboard.style.display="none";
+  if(!user.relatorio) document.querySelector(".menu button:nth-child(7)").style.display="none";
   render();
 }
 
 function logout(){location.reload();}
 
-// MOSTRAR PAINEL
 function mostrar(id){
   document.querySelectorAll(".card").forEach(c=>c.style.display="none");
   document.getElementById(id).style.display="block";
 }
 
-// SALVAR
-function salvar(){localStorage.setItem("mm_loja",JSON.stringify(db)); render();}
-
-// RENDER
 function render(){
-  totalProdutos.innerText = db.produtos.length;
-  totalVendas.innerText = db.caixa.total.toFixed(2);
-  document.getElementById("totalFiado").innerText = db.fiado.reduce((s,f)=>s+f.valor,0).toFixed(2);
+  totalProdutos.innerText=db.produtos.length;
+  totalVendas.innerText=db.caixa.total.toFixed(2);
+  totalFiado.innerText=db.fiado.reduce((s,f)=>s+f.valor,0).toFixed(2);
 
   listaProdutos.innerHTML="";
   db.produtos.forEach(p=>{
-    listaProdutos.innerHTML+=`<tr>
-      <td>${p.id}</td><td>${p.nome} ${p.tamanho}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.estoque}</td>
-      <td><button onclick="removerProduto(${p.id})">🗑</button></td></tr>`;
+    listaProdutos.innerHTML+=`
+      <tr>
+        <td>${p.id}</td>
+        <td>${p.nome} ${p.tamanho}</td>
+        <td>R$ ${p.preco.toFixed(2)}</td>
+        <td>${p.estoque}</td>
+        <td><button onclick="removerProduto(${p.id})">🗑</button></td>
+      </tr>`;
   });
 
   listaClientes.innerHTML="";
   db.clientes.forEach(c=>{
-    let divida = db.fiado.filter(f=>f.cliente===c.nome).reduce((s,f)=>s+f.valor,0);
-    listaClientes.innerHTML+=`<tr>
-      <td>${c.nome}</td><td>${c.telefone}</td><td>R$ ${divida.toFixed(2)}</td>
-      <td><button onclick="selecionarCliente('${c.nome}')">Selecionar</button></td></tr>`;
-  });
-
-  listaFiado.innerHTML="";
-  db.fiado.forEach((f,i)=>{
-    listaFiado.innerHTML+=`<tr>
-      <td>${f.cliente}</td><td>R$ ${f.valor.toFixed(2)}</td><td>${f.data}</td>
-      <td><button onclick="pagarFiado(${i})">💰</button></td></tr>`;
+    let divida=db.fiado.filter(f=>f.cliente===c.nome).reduce((s,f)=>s+f.valor,0);
+    listaClientes.innerHTML+=`
+      <tr>
+        <td>${c.nome}</td>
+        <td>${c.telefone}</td>
+        <td>R$ ${divida.toFixed(2)}</td>
+        <td><button onclick="selecionarCliente('${c.nome}')">Selecionar</button></td>
+      </tr>`;
   });
 
   listaUsuarios.innerHTML="";
   db.usuarios.forEach(u=>{
-    listaUsuarios.innerHTML+=`<tr>
-      <td>${u.usuario}</td><td>${u.dashboard?'Sim':'Não'}</td><td>${u.relatorio?'Sim':'Não'}</td>
-    </tr>`;
+    listaUsuarios.innerHTML+=`
+      <tr>
+        <td>${u.usuario}</td>
+        <td>${u.dashboard?'Sim':'Não'}</td>
+        <td>${u.relatorio?'Sim':'Não'}</td>
+      </tr>`;
   });
 }
 
-// PRODUTOS
 function addProduto(){
   if(!nome.value||!preco.value||!estoque.value) return alert("Preencha tudo");
-  let novoId = db.produtos.length?Math.max(...db.produtos.map(p=>p.id))+1:1;
-  db.produtos.push({id:novoId,nome:nome.value,tamanho:tamanho.value,codigo:codigo.value,preco:Number(preco.value),estoque:Number(estoque.value)});
+  let novoId=db.produtos.length?Math.max(...db.produtos.map(p=>p.id))+1:1;
+  db.produtos.push({
+    id:novoId,
+    nome:nome.value,
+    tamanho:tamanho.value,
+    codigo:codigo.value,
+    preco:Number(preco.value),
+    estoque:Number(estoque.value)
+  });
   nome.value=""; preco.value=""; estoque.value=""; codigo.value="";
   salvar();
 }
-function removerProduto(id){db.produtos=db.produtos.filter(p=>p.id!==id); salvar();}
 
-// CLIENTES
-function adicionarCliente(){if(!nomeCliente.value) return alert("Digite nome"); db.clientes.push({nome:nomeCliente.value,telefone:telefoneCliente.value}); nomeCliente.value=""; telefoneCliente.value=""; salvar();}
-function selecionarCliente(nome){clienteSelecionado=nome; alert("Cliente selecionado: "+nome);}
-
-// USUÁRIOS
-function criarUsuario(){
-  if(!novoUsuario.value||!novaSenha.value) return alert("Preencha tudo");
-  db.usuarios.push({usuario:novoUsuario.value,senha:novaSenha.value,dashboard:acessoDashboard.checked,relatorio:acessoRelatorio.checked});
-  novoUsuario.value=""; novaSenha.value=""; acessoDashboard.checked=false; acessoRelatorio.checked=false;
+function removerProduto(id){
+  db.produtos=db.produtos.filter(p=>p.id!==id);
   salvar();
 }
 
-// PDV
-function abrirCaixa(){db.caixa.aberto=true; alert("Caixa aberto"); salvar();}
-function fecharCaixa(){db.caixa.aberto=false; alert("Caixa fechado"); salvar();}
+function adicionarCliente(){
+  if(!nomeCliente.value) return alert("Digite nome");
+  db.clientes.push({nome:nomeCliente.value,telefone:telefoneCliente.value});
+  nomeCliente.value=""; telefoneCliente.value="";
+  salvar();
+}
+
+function selecionarCliente(nome){
+  clienteSelecionado=nome;
+  alert("Cliente selecionado: "+nome);
+}
+
+function criarUsuario(){
+  if(!novoUsuario.value||!novaSenha.value) return alert("Preencha tudo");
+  db.usuarios.push({
+    usuario:novoUsuario.value,
+    senha:novaSenha.value,
+    dashboard:acessoDashboard.checked,
+    relatorio:acessoRelatorio.checked
+  });
+  novoUsuario.value=""; novaSenha.value="";
+  acessoDashboard.checked=false; acessoRelatorio.checked=false;
+  salvar();
+}
 
 function pesquisar(){
-  resultado.innerHTML="";
   let termo=pesquisa.value.toLowerCase();
-  db.produtos.filter(p=>(p.nome.toLowerCase().includes(termo)||p.codigo==termo)&&p.estoque>0)
-    .forEach(p=>{resultado.innerHTML+=`<tr><td>${p.nome} ${p.tamanho}</td><td>R$ ${p.preco.toFixed(2)}</td><td><button onclick="adicionarCarrinho(${p.id})">+</button></td></tr>`});
+  resultadoPesquisa.innerHTML="";
+  db.produtos
+    .filter(p=>(p.nome.toLowerCase().includes(termo)||p.codigo===termo)&&p.estoque>0)
+    .forEach(p=>{
+      resultadoPesquisa.innerHTML+=`
+        <tr>
+          <td>${p.nome} ${p.tamanho}</td>
+          <td>R$ ${p.preco.toFixed(2)}</td>
+          <td><button onclick="adicionarCarrinho(${p.id})">+</button></td>
+        </tr>`;
+    });
 }
 
 function adicionarCarrinho(id){
   let prod=db.produtos.find(p=>p.id===id);
   if(!prod||prod.estoque<=0) return alert("Produto esgotado");
   let item=carrinho.find(c=>c.id===id);
-  if(item){if(item.quantidade>=prod.estoque) return alert("Estoque insuficiente"); item.quantidade++;} else {carrinho.push({id:prod.id,nome:prod.nome+" "+prod.tamanho,preco:prod.preco,quantidade:1});}
+  if(item){item.quantidade++;}
+  else{carrinho.push({id:prod.id,nome:prod.nome+" "+prod.tamanho,preco:prod.preco,quantidade:1});}
   atualizarCarrinho();
 }
 
 function atualizarCarrinho(){
-  carrinhoLista.innerHTML=""; let total=0;
+  carrinhoLista.innerHTML="";
+  let total=0;
   carrinho.forEach((item,i)=>{
-    let subtotal=item.preco*item.quantidade; total+=subtotal;
-    carrinhoLista.innerHTML+=`<tr><td>${item.nome}</td><td>${item.quantidade}</td><td>R$ ${subtotal.toFixed(2)}</td><td><button onclick="carrinho.splice(${i},1);atualizarCarrinho()">❌</button></td></tr>`;
+    let subtotal=item.preco*item.quantidade;
+    total+=subtotal;
+    carrinhoLista.innerHTML+=`
+      <tr>
+        <td>${item.nome}</td>
+        <td>${item.quantidade}</td>
+        <td>R$ ${subtotal.toFixed(2)}</td>
+        <td><button onclick="removerItem(${i})">❌</button></td>
+      </tr>`;
   });
   totalVenda.innerText=total.toFixed(2);
+}
+
+function removerItem(i){
+  carrinho.splice(i,1);
+  atualizarCarrinho();
 }
 
 function finalizarVenda(){
@@ -258,36 +314,49 @@ function finalizarVenda(){
 
   if(formaPagamento.value==="Fiado"){
     if(!clienteSelecionado) return alert("Selecione cliente");
-    let dividaAtual = db.fiado.filter(f=>f.cliente===clienteSelecionado).reduce((s,f)=>s+f.valor,0);
-    if(dividaAtual+total>LIMITE_FIADO) return alert("Cliente ultrapassou limite de R$ "+LIMITE_FIADO);
-    db.fiado.push({cliente:clienteSelecionado,valor:total,data:new Date().toLocaleDateString("pt-BR")});
+    db.fiado.push({
+      cliente:clienteSelecionado,
+      valor:total,
+      data:new Date().toLocaleDateString("pt-BR")
+    });
   } else {
-    let recebido = Number(valorRecebido.value); if(recebido<total) return alert("Valor insuficiente"); troco.innerText=(recebido-total).toFixed(2); db.caixa.total+=total;
+    let recebido=Number(valorRecebido.value);
+    if(recebido<total) return alert("Valor insuficiente");
+    troco.innerText=(recebido-total).toFixed(2);
+    db.caixa.total+=total;
   }
 
-  for(let item of carrinho){
-    let prod=db.produtos.find(p=>item.nome.includes(p.nome));
-    if(!prod||prod.estoque<item.quantidade) return alert("Estoque insuficiente");
+  carrinho.forEach(item=>{
+    let prod=db.produtos.find(p=>p.id===item.id);
     prod.estoque-=item.quantidade;
-  }
+  });
 
-  db.vendas.push({itens:[...carrinho],total,pagamento:formaPagamento.value,cliente:clienteSelecionado,data:new Date().toLocaleString("pt-BR")});
-  carrinho=[]; clienteSelecionado=null; formaPagamento.value=""; valorRecebido.value=""; atualizarCarrinho(); salvar();
+  db.vendas.push({
+    itens:[...carrinho],
+    total,
+    pagamento:formaPagamento.value,
+    cliente:clienteSelecionado,
+    data:new Date().toLocaleString("pt-BR")
+  });
+
+  carrinho=[];
+  clienteSelecionado=null;
+  formaPagamento.value="";
+  valorRecebido.value="";
+  atualizarCarrinho();
+  salvar();
   alert("Venda finalizada");
 }
 
-// FIADO
-function pagarFiado(i){let f=db.fiado[i]; db.caixa.total+=f.valor; db.fiado.splice(i,1); salvar(); alert("Pagamento registrado");}
-
-// RELATÓRIO
 function relatorioDiario(){
   let hoje=new Date().toLocaleDateString("pt-BR");
-  let vendasHoje = db.vendas.filter(v=>v.data.startsWith(hoje));
-  let total = vendasHoje.reduce((s,v)=>s+v.total,0);
+  let vendasHoje=db.vendas.filter(v=>v.data.startsWith(hoje));
+  let total=vendasHoje.reduce((s,v)=>s+v.total,0);
   alert(`RELATÓRIO DE HOJE\nData: ${hoje}\nVendas: ${vendasHoje.length}\nTotal: R$ ${total.toFixed(2)}`);
 }
 
 render();
 </script>
+
 </body>
 </html>
