@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#111111">
 <style>
-body{margin:0;font-family:Segoe UI;background:#0f0f0f;color:#fff;display:flex}
+body{margin:0;font-family:Segoe UI;background:#0f0f0f;color:#fff;display:flex;flex-direction:row}
 .sidebar{width:230px;background:#111;height:100vh;padding:20px;border-right:1px solid #222}
 .logo{text-align:center;margin-bottom:20px}
 .logo h1{margin:0;color:gold;font-size:36px;font-weight:bold;}
@@ -99,6 +99,8 @@ th{background:#222;color:gold}
 
 <div id="caixa" class="card" style="display:none">
   <h2>PDV</h2>
+  <button class="action" onclick="abrirCaixa()">🟢 Abrir Caixa</button>
+  <button class="action" onclick="fecharCaixa()">🔴 Fechar Caixa</button><br>
   <input id="pesquisa" placeholder="Pesquisar ou código" onkeyup="pesquisar()">
   <select id="formaPagamento">
     <option value="">Pagamento</option>
@@ -119,26 +121,27 @@ th{background:#222;color:gold}
 
 <script>
 // CONFIGURAÇÃO
-let LIMITE_FIADO = 300;
+const LIMITE_FIADO = 300;
+let usuarioLogado = null;
+let carrinho = [];
+let clienteSelecionado = null;
 
 // BANCO LOCAL
-let db=JSON.parse(localStorage.getItem("mm_loja"))||{
-  usuarios:[{usuario:"admin",senha:"1234"}],
+let db = JSON.parse(localStorage.getItem("mm_loja")) || {
+  usuarios:[{usuario:"admin",senha:"1234",tipo:"admin"}],
   produtos:[],
   vendas:[],
   clientes:[],
   fiado:[],
   pagamentosFiado:[],
-  caixa:{total:0}
+  caixa:{aberto:false,total:0}
 };
-
-let carrinho=[];
-let clienteSelecionado=null;
 
 // LOGIN
 function login(){
   let user=db.usuarios.find(u=>u.usuario===usuario.value && u.senha===senha.value);
   if(!user) return alert("Login inválido");
+  usuarioLogado=user;
   loginTela.style.display="none";
   render();
 }
@@ -150,47 +153,42 @@ function logout(){location.reload();}
 function mostrar(id){
   document.querySelectorAll(".card").forEach(c=>c.style.display="none");
   document.getElementById(id).style.display="block";
+  if(usuarioLogado.tipo==="vendedor" && id==="produtos") alert("Vendedor não pode alterar produtos");
 }
 
 // SALVAR
-function salvar(){localStorage.setItem("mm_loja",JSON.stringify(db));render();}
+function salvar(){localStorage.setItem("mm_loja",JSON.stringify(db)); render();}
 
-// RENDERIZAÇÃO
+// RENDER
 function render(){
   totalProdutos.innerText=db.produtos.length;
   totalVendas.innerText=db.caixa.total.toFixed(2);
-  if(document.getElementById("totalFiado"))
-    document.getElementById("totalFiado").innerText=db.fiado.reduce((s,f)=>s+f.valor,0).toFixed(2);
+  document.getElementById("totalFiado").innerText=db.fiado.reduce((s,f)=>s+f.valor,0).toFixed(2);
 
-  // Produtos
   listaProdutos.innerHTML="";
   db.produtos.forEach(p=>{
     listaProdutos.innerHTML+=`<tr>
       <td>${p.id}</td><td>${p.nome} ${p.tamanho}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.estoque}</td>
-      <td><button onclick="removerProduto(${p.id})">🗑</button></td></tr>`;
+      <td>${usuarioLogado.tipo==="admin"?`<button onclick="removerProduto(${p.id})">🗑</button>`:""}</td></tr>`;
   });
 
   // Clientes
-  if(document.getElementById("listaClientes")){
-    listaClientes.innerHTML="";
-    db.clientes.forEach(c=>{
-      let divida=calcularDividaCliente(c.nome);
-      listaClientes.innerHTML+=`<tr>
-        <td>${c.nome}</td><td>${c.telefone}</td><td>R$ ${divida.toFixed(2)}</td>
-        <td><button onclick="selecionarCliente('${c.nome}')">Selecionar</button>
-        <button onclick="cobrarWhats('${c.nome}')">📲 Cobrar</button></td></tr>`;
-    });
-  }
+  listaClientes.innerHTML="";
+  db.clientes.forEach(c=>{
+    let divida = calcularDividaCliente(c.nome);
+    listaClientes.innerHTML+=`<tr>
+      <td>${c.nome}</td><td>${c.telefone}</td><td>R$ ${divida.toFixed(2)}</td>
+      <td><button onclick="selecionarCliente('${c.nome}')">Selecionar</button>
+          <button onclick="cobrarWhats('${c.nome}')">📲 Cobrar</button></td></tr>`;
+  });
 
   // Fiado
-  if(document.getElementById("listaFiado")){
-    listaFiado.innerHTML="";
-    db.fiado.forEach((f,i)=>{
-      listaFiado.innerHTML+=`<tr>
-        <td>${f.cliente}</td><td>R$ ${f.valor.toFixed(2)}</td><td>${f.data}</td>
-        <td><button onclick="pagarFiado(${i})">💰 Pagar</button></td></tr>`;
-    });
-  }
+  listaFiado.innerHTML="";
+  db.fiado.forEach((f,i)=>{
+    listaFiado.innerHTML+=`<tr>
+      <td>${f.cliente}</td><td>R$ ${f.valor.toFixed(2)}</td><td>${f.data}</td>
+      <td><button onclick="pagarFiado(${i})">💰 Pagar</button></td></tr>`;
+  });
 }
 
 // CLIENTES
@@ -204,12 +202,20 @@ function calcularDividaCliente(nome){return db.fiado.filter(f=>f.cliente===nome)
 
 // PRODUTOS
 function addProduto(){
+  if(usuarioLogado.tipo==="vendedor") return alert("Vendedor não pode adicionar produtos");
   if(!nome.value||!preco.value||!estoque.value) return alert("Preencha tudo");
   let novoId=db.produtos.length?Math.max(...db.produtos.map(p=>p.id))+1:1;
   db.produtos.push({id:novoId,nome:nome.value,tamanho:tamanho.value,codigo:codigo.value,preco:Number(preco.value),estoque:Number(estoque.value)});
   nome.value=""; preco.value=""; estoque.value=""; codigo.value=""; salvar();
 }
-function removerProduto(id){db.produtos=db.produtos.filter(p=>p.id!==id); salvar();}
+function removerProduto(id){
+  if(usuarioLogado.tipo!=="admin") return alert("Apenas admin pode remover");
+  db.produtos=db.produtos.filter(p=>p.id!==id); salvar();
+}
+
+// CAIXA
+function abrirCaixa(){db.caixa.aberto=true; alert("Caixa aberto"); salvar();}
+function fecharCaixa(){db.caixa.aberto=false; alert("Caixa fechado"); salvar();}
 
 // PDV
 function pesquisar(){
@@ -242,6 +248,7 @@ function atualizarCarrinho(){
 }
 
 function finalizarVenda(){
+  if(!db.caixa.aberto) return alert("Abra o caixa antes de vender");
   if(carrinho.length===0) return alert("Carrinho vazio");
   if(!formaPagamento.value) return alert("Selecione pagamento");
   let total=parseFloat(totalVenda.innerText);
@@ -301,6 +308,20 @@ function relatorioDiario(){
   let total=vendasHoje.reduce((s,v)=>s+v.total,0);
   alert(`RELATÓRIO DE HOJE\nData: ${hoje}\nVendas: ${vendasHoje.length}\nTotal: R$ ${total.toFixed(2)}`);
 }
+
+// BACKUP AUTOMÁTICO
+function backupAutomatico() {
+  const dataStr = JSON.stringify(db, null, 2);
+  const blob = new Blob([dataStr], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `backup_mm_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  console.log("Backup automático realizado!");
+}
+setInterval(backupAutomatico, 5*60*1000);
 
 render();
 </script>
