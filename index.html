@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mil Modas - Sistema Profissional</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#111111">
 <style>
 body{margin:0;font-family:Segoe UI;background:#0f0f0f;color:#fff;display:flex;flex-direction:row}
 .sidebar{width:230px;background:#111;height:100vh;padding:20px;border-right:1px solid #222}
@@ -44,10 +42,11 @@ th{background:#222;color:gold}
     <span>Mil Modas</span>
   </div>
   <div class="menu">
-    <button onclick="mostrar('dashboard')">Dashboard</button>
+    <button onclick="mostrar('dashboard')" id="btnDashboard">Dashboard</button>
     <button onclick="mostrar('produtos')">Produtos</button>
     <button onclick="mostrar('clientes')">Clientes</button>
     <button onclick="mostrar('fiado')">Fiado</button>
+    <button onclick="mostrar('usuarios')">Usuários</button>
     <button onclick="mostrar('caixa')">PDV</button>
     <button onclick="relatorioDiario()">Relatório Diário</button>
     <button onclick="logout()">Sair</button>
@@ -73,7 +72,7 @@ th{background:#222;color:gold}
   <input id="estoque" type="number" placeholder="Estoque">
   <button class="action" onclick="addProduto()">Salvar</button>
   <table>
-    <thead><tr><th>ID</th><th>Produto</th><th>Preço</th><th>Estoque</th><th></th></tr></thead>
+    <thead><tr><th>ID</th><th>Produto</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead>
     <tbody id="listaProdutos"></tbody>
   </table>
 </div>
@@ -84,7 +83,7 @@ th{background:#222;color:gold}
   <input id="telefoneCliente" placeholder="Telefone">
   <button class="action" onclick="adicionarCliente()">Cadastrar</button>
   <table>
-    <thead><tr><th>Nome</th><th>Telefone</th><th>Dívida</th><th></th></tr></thead>
+    <thead><tr><th>Nome</th><th>Telefone</th><th>Dívida</th><th>Ações</th></tr></thead>
     <tbody id="listaClientes"></tbody>
   </table>
 </div>
@@ -92,15 +91,28 @@ th{background:#222;color:gold}
 <div id="fiado" class="card" style="display:none">
   <h2>Controle de Fiado</h2>
   <table>
-    <thead><tr><th>Cliente</th><th>Valor</th><th>Data</th><th></th></tr></thead>
+    <thead><tr><th>Cliente</th><th>Valor</th><th>Data</th><th>Ações</th></tr></thead>
     <tbody id="listaFiado"></tbody>
+  </table>
+</div>
+
+<div id="usuarios" class="card" style="display:none">
+  <h2>Usuários</h2>
+  <input id="novoUsuario" placeholder="Usuário">
+  <input id="novaSenha" placeholder="Senha">
+  <label><input type="checkbox" id="acessoDashboard"> Pode ver Dashboard</label>
+  <label><input type="checkbox" id="acessoRelatorio"> Pode ver Relatório</label>
+  <button class="action" onclick="criarUsuario()">Criar</button>
+  <table>
+    <thead><tr><th>Usuário</th><th>Dashboard</th><th>Relatório</th></tr></thead>
+    <tbody id="listaUsuarios"></tbody>
   </table>
 </div>
 
 <div id="caixa" class="card" style="display:none">
   <h2>PDV</h2>
   <button class="action" onclick="abrirCaixa()">🟢 Abrir Caixa</button>
-  <button class="action" onclick="fecharCaixa()">🔴 Fechar Caixa</button><br>
+  <button class="action" onclick="fecharCaixa()">🔴 Fechar Caixa</button>
   <input id="pesquisa" placeholder="Pesquisar ou código" onkeyup="pesquisar()">
   <select id="formaPagamento">
     <option value="">Pagamento</option>
@@ -120,22 +132,16 @@ th{background:#222;color:gold}
 </div>
 
 <script>
-// CONFIGURAÇÃO
-const LIMITE_FIADO = 300;
-let usuarioLogado = null;
-let carrinho = [];
-let clienteSelecionado = null;
-
-// BANCO LOCAL
+// CONFIG
+let LIMITE_FIADO = 300;
 let db = JSON.parse(localStorage.getItem("mm_loja")) || {
-  usuarios:[{usuario:"admin",senha:"1234",tipo:"admin"}],
-  produtos:[],
-  vendas:[],
-  clientes:[],
-  fiado:[],
-  pagamentosFiado:[],
-  caixa:{aberto:false,total:0}
+  usuarios:[{usuario:"admin",senha:"1234",dashboard:true,relatorio:true}],
+  produtos:[], clientes:[], fiado:[], vendas:[], caixa:{aberto:false,total:0}
 };
+
+let usuarioLogado=null;
+let carrinho=[];
+let clienteSelecionado=null;
 
 // LOGIN
 function login(){
@@ -143,17 +149,17 @@ function login(){
   if(!user) return alert("Login inválido");
   usuarioLogado=user;
   loginTela.style.display="none";
+  if(!user.dashboard) document.getElementById("btnDashboard").style.display="none";
+  if(!user.relatorio) document.querySelector(".menu button:nth-child(6)").style.display="none";
   render();
 }
 
-// LOGOUT
 function logout(){location.reload();}
 
 // MOSTRAR PAINEL
 function mostrar(id){
   document.querySelectorAll(".card").forEach(c=>c.style.display="none");
   document.getElementById(id).style.display="block";
-  if(usuarioLogado.tipo==="vendedor" && id==="produtos") alert("Vendedor não pode alterar produtos");
 }
 
 // SALVAR
@@ -161,107 +167,102 @@ function salvar(){localStorage.setItem("mm_loja",JSON.stringify(db)); render();}
 
 // RENDER
 function render(){
-  totalProdutos.innerText=db.produtos.length;
-  totalVendas.innerText=db.caixa.total.toFixed(2);
-  document.getElementById("totalFiado").innerText=db.fiado.reduce((s,f)=>s+f.valor,0).toFixed(2);
+  totalProdutos.innerText = db.produtos.length;
+  totalVendas.innerText = db.caixa.total.toFixed(2);
+  document.getElementById("totalFiado").innerText = db.fiado.reduce((s,f)=>s+f.valor,0).toFixed(2);
 
   listaProdutos.innerHTML="";
   db.produtos.forEach(p=>{
     listaProdutos.innerHTML+=`<tr>
       <td>${p.id}</td><td>${p.nome} ${p.tamanho}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.estoque}</td>
-      <td>${usuarioLogado.tipo==="admin"?`<button onclick="removerProduto(${p.id})">🗑</button>`:""}</td></tr>`;
+      <td><button onclick="removerProduto(${p.id})">🗑</button></td></tr>`;
   });
 
-  // Clientes
   listaClientes.innerHTML="";
   db.clientes.forEach(c=>{
-    let divida = calcularDividaCliente(c.nome);
+    let divida = db.fiado.filter(f=>f.cliente===c.nome).reduce((s,f)=>s+f.valor,0);
     listaClientes.innerHTML+=`<tr>
       <td>${c.nome}</td><td>${c.telefone}</td><td>R$ ${divida.toFixed(2)}</td>
-      <td><button onclick="selecionarCliente('${c.nome}')">Selecionar</button>
-          <button onclick="cobrarWhats('${c.nome}')">📲 Cobrar</button></td></tr>`;
+      <td><button onclick="selecionarCliente('${c.nome}')">Selecionar</button></td></tr>`;
   });
 
-  // Fiado
   listaFiado.innerHTML="";
   db.fiado.forEach((f,i)=>{
     listaFiado.innerHTML+=`<tr>
       <td>${f.cliente}</td><td>R$ ${f.valor.toFixed(2)}</td><td>${f.data}</td>
-      <td><button onclick="pagarFiado(${i})">💰 Pagar</button></td></tr>`;
+      <td><button onclick="pagarFiado(${i})">💰</button></td></tr>`;
+  });
+
+  listaUsuarios.innerHTML="";
+  db.usuarios.forEach(u=>{
+    listaUsuarios.innerHTML+=`<tr>
+      <td>${u.usuario}</td><td>${u.dashboard?'Sim':'Não'}</td><td>${u.relatorio?'Sim':'Não'}</td>
+    </tr>`;
   });
 }
 
-// CLIENTES
-function adicionarCliente(){
-  if(!nomeCliente.value) return alert("Digite nome");
-  db.clientes.push({nome:nomeCliente.value,telefone:telefoneCliente.value});
-  nomeCliente.value=""; telefoneCliente.value=""; salvar();
-}
-function selecionarCliente(nome){clienteSelecionado=nome; alert("Cliente selecionado: "+nome);}
-function calcularDividaCliente(nome){return db.fiado.filter(f=>f.cliente===nome).reduce((s,f)=>s+f.valor,0);}
-
 // PRODUTOS
 function addProduto(){
-  if(usuarioLogado.tipo==="vendedor") return alert("Vendedor não pode adicionar produtos");
   if(!nome.value||!preco.value||!estoque.value) return alert("Preencha tudo");
-  let novoId=db.produtos.length?Math.max(...db.produtos.map(p=>p.id))+1:1;
+  let novoId = db.produtos.length?Math.max(...db.produtos.map(p=>p.id))+1:1;
   db.produtos.push({id:novoId,nome:nome.value,tamanho:tamanho.value,codigo:codigo.value,preco:Number(preco.value),estoque:Number(estoque.value)});
-  nome.value=""; preco.value=""; estoque.value=""; codigo.value=""; salvar();
+  nome.value=""; preco.value=""; estoque.value=""; codigo.value="";
+  salvar();
 }
-function removerProduto(id){
-  if(usuarioLogado.tipo!=="admin") return alert("Apenas admin pode remover");
-  db.produtos=db.produtos.filter(p=>p.id!==id); salvar();
+function removerProduto(id){db.produtos=db.produtos.filter(p=>p.id!==id); salvar();}
+
+// CLIENTES
+function adicionarCliente(){if(!nomeCliente.value) return alert("Digite nome"); db.clientes.push({nome:nomeCliente.value,telefone:telefoneCliente.value}); nomeCliente.value=""; telefoneCliente.value=""; salvar();}
+function selecionarCliente(nome){clienteSelecionado=nome; alert("Cliente selecionado: "+nome);}
+
+// USUÁRIOS
+function criarUsuario(){
+  if(!novoUsuario.value||!novaSenha.value) return alert("Preencha tudo");
+  db.usuarios.push({usuario:novoUsuario.value,senha:novaSenha.value,dashboard:acessoDashboard.checked,relatorio:acessoRelatorio.checked});
+  novoUsuario.value=""; novaSenha.value=""; acessoDashboard.checked=false; acessoRelatorio.checked=false;
+  salvar();
 }
 
-// CAIXA
+// PDV
 function abrirCaixa(){db.caixa.aberto=true; alert("Caixa aberto"); salvar();}
 function fecharCaixa(){db.caixa.aberto=false; alert("Caixa fechado"); salvar();}
 
-// PDV
 function pesquisar(){
   resultado.innerHTML="";
   let termo=pesquisa.value.toLowerCase();
   db.produtos.filter(p=>(p.nome.toLowerCase().includes(termo)||p.codigo==termo)&&p.estoque>0)
-    .forEach(p=>{resultado.innerHTML+=`<tr>
-      <td>${p.nome} ${p.tamanho}</td><td>R$ ${p.preco.toFixed(2)}</td><td><button onclick="adicionarCarrinho(${p.id})">+</button></td></tr>`});
+    .forEach(p=>{resultado.innerHTML+=`<tr><td>${p.nome} ${p.tamanho}</td><td>R$ ${p.preco.toFixed(2)}</td><td><button onclick="adicionarCarrinho(${p.id})">+</button></td></tr>`});
 }
 
 function adicionarCarrinho(id){
   let prod=db.produtos.find(p=>p.id===id);
   if(!prod||prod.estoque<=0) return alert("Produto esgotado");
   let item=carrinho.find(c=>c.id===id);
-  if(item){if(item.quantidade>=prod.estoque) return alert("Estoque insuficiente"); item.quantidade++;}
-  else{carrinho.push({id:prod.id,nome:prod.nome+" "+prod.tamanho,preco:prod.preco,quantidade:1});}
+  if(item){if(item.quantidade>=prod.estoque) return alert("Estoque insuficiente"); item.quantidade++;} else {carrinho.push({id:prod.id,nome:prod.nome+" "+prod.tamanho,preco:prod.preco,quantidade:1});}
   atualizarCarrinho();
 }
 
 function atualizarCarrinho(){
-  carrinhoLista.innerHTML="";
-  let total=0;
+  carrinhoLista.innerHTML=""; let total=0;
   carrinho.forEach((item,i)=>{
     let subtotal=item.preco*item.quantidade; total+=subtotal;
-    carrinhoLista.innerHTML+=`<tr>
-      <td>${item.nome}</td><td>${item.quantidade}</td><td>R$ ${subtotal.toFixed(2)}</td>
-      <td><button onclick="carrinho.splice(${i},1);atualizarCarrinho()">❌</button></td></tr>`;
+    carrinhoLista.innerHTML+=`<tr><td>${item.nome}</td><td>${item.quantidade}</td><td>R$ ${subtotal.toFixed(2)}</td><td><button onclick="carrinho.splice(${i},1);atualizarCarrinho()">❌</button></td></tr>`;
   });
   totalVenda.innerText=total.toFixed(2);
 }
 
 function finalizarVenda(){
-  if(!db.caixa.aberto) return alert("Abra o caixa antes de vender");
   if(carrinho.length===0) return alert("Carrinho vazio");
   if(!formaPagamento.value) return alert("Selecione pagamento");
   let total=parseFloat(totalVenda.innerText);
 
   if(formaPagamento.value==="Fiado"){
     if(!clienteSelecionado) return alert("Selecione cliente");
-    let dividaAtual=calcularDividaCliente(clienteSelecionado);
+    let dividaAtual = db.fiado.filter(f=>f.cliente===clienteSelecionado).reduce((s,f)=>s+f.valor,0);
     if(dividaAtual+total>LIMITE_FIADO) return alert("Cliente ultrapassou limite de R$ "+LIMITE_FIADO);
+    db.fiado.push({cliente:clienteSelecionado,valor:total,data:new Date().toLocaleDateString("pt-BR")});
   } else {
-    let recebido=Number(valorRecebido.value);
-    if(recebido<total) return alert("Valor insuficiente");
-    troco.innerText=(recebido-total).toFixed(2);
-    db.caixa.total+=total;
+    let recebido = Number(valorRecebido.value); if(recebido<total) return alert("Valor insuficiente"); troco.innerText=(recebido-total).toFixed(2); db.caixa.total+=total;
   }
 
   for(let item of carrinho){
@@ -270,61 +271,23 @@ function finalizarVenda(){
     prod.estoque-=item.quantidade;
   }
 
-  let venda={itens:[...carrinho],total,pagamento:formaPagamento.value,data:new Date().toLocaleString("pt-BR"),cliente:clienteSelecionado};
-  db.vendas.push(venda);
-
-  if(formaPagamento.value==="Fiado"){
-    db.fiado.push({cliente:clienteSelecionado,valor:total,data:new Date().toLocaleDateString("pt-BR")});
-  }
-
+  db.vendas.push({itens:[...carrinho],total,pagamento:formaPagamento.value,cliente:clienteSelecionado,data:new Date().toLocaleString("pt-BR")});
   carrinho=[]; clienteSelecionado=null; formaPagamento.value=""; valorRecebido.value=""; atualizarCarrinho(); salvar();
   alert("Venda finalizada");
 }
 
 // FIADO
-function pagarFiado(i){
-  let f=db.fiado[i]; db.caixa.total+=f.valor;
-  db.pagamentosFiado.push({cliente:f.cliente,valor:f.valor,data:new Date().toLocaleString("pt-BR")});
-  alert(`Recibo de pagamento\nCliente: ${f.cliente}\nValor: R$ ${f.valor.toFixed(2)}`);
-  db.fiado.splice(i,1); salvar();
-}
+function pagarFiado(i){let f=db.fiado[i]; db.caixa.total+=f.valor; db.fiado.splice(i,1); salvar(); alert("Pagamento registrado");}
 
-// COBRANÇA WHATSAPP
-function cobrarWhats(nome){
-  let cliente=db.clientes.find(c=>c.nome===nome);
-  if(!cliente||!cliente.telefone) return alert("Telefone não cadastrado");
-  let divida=calcularDividaCliente(nome);
-  if(divida<=0) return alert("Cliente não possui dívida");
-  let mensagem=`Olá ${nome}, você possui um débito de R$ ${divida.toFixed(2)} na Mil Modas. Por favor, regularizar.`;
-  let telefone=cliente.telefone.replace(/\D/g,"");
-  let url=`https://wa.me/55${telefone}?text=${encodeURIComponent(mensagem)}`;
-  window.open(url,"_blank");
-}
-
-// RELATÓRIO DIÁRIO
+// RELATÓRIO
 function relatorioDiario(){
   let hoje=new Date().toLocaleDateString("pt-BR");
-  let vendasHoje=db.vendas.filter(v=>v.data.startsWith(hoje));
-  let total=vendasHoje.reduce((s,v)=>s+v.total,0);
+  let vendasHoje = db.vendas.filter(v=>v.data.startsWith(hoje));
+  let total = vendasHoje.reduce((s,v)=>s+v.total,0);
   alert(`RELATÓRIO DE HOJE\nData: ${hoje}\nVendas: ${vendasHoje.length}\nTotal: R$ ${total.toFixed(2)}`);
 }
 
-// BACKUP AUTOMÁTICO
-function backupAutomatico() {
-  const dataStr = JSON.stringify(db, null, 2);
-  const blob = new Blob([dataStr], {type: "application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `backup_mm_${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  console.log("Backup automático realizado!");
-}
-setInterval(backupAutomatico, 5*60*1000);
-
 render();
 </script>
-
 </body>
 </html>
